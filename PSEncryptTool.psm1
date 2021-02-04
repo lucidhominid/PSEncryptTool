@@ -1,3 +1,89 @@
+
+Function ConvertFrom-Decimal{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValuefromPipeLine)]
+        $InputObject,
+        [Int]$Base=2
+    )
+        [System.Convert]::ToString($InputObject,$Base)
+    
+    }
+    Function ConvertTo-Decimal{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValuefromPipeLine)]
+        $InputObject,
+        [Int]$Base=2
+    )
+        [Convert]::ToInt64($InputObject,$Base)
+    
+    }
+    Function ConvertTo-Base64{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValuefromPipeLine)]
+        $InputObject
+    )
+    Begin
+    {
+        $OutObject = @()
+    }
+    Process
+    {
+        $OutObject+=$InputObject
+        
+    }
+    End
+    {
+        [Convert]::ToBase64String($OutObject)
+    }
+    }
+    Function ConvertFrom-Base64{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValuefromPipeLine)]
+        $InputObject
+    )
+        [Convert]::FromBase64String($InputObject)
+    }
+    Function ConvertTo-Byte{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValuefromPipeLine)]
+        $InputObject
+    )
+    
+    Process
+    {
+        ($InputObject -join "`n").ToCharArray()|ForEach-Object{[Byte]$_}
+    }
+    }
+    Function ConvertTo-String{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(ValuefromPipeLine)]
+        $InputObject
+    )
+    Begin
+    {
+        $OutObject = @()
+    }
+    Process
+    {
+        $OutObject+=$InputObject
+    }
+    End
+    {
+        ($OutObject|ForEach-Object{[Char]$_})-join ''
+    }
+    }
 Function Encrypt-String {
     [CmdletBinding(DefaultParameterSetName="Scope")]
     param
@@ -44,7 +130,7 @@ Function Encrypt-String {
             EncryptedData = ConvertFrom-SecureString -SecureString $secureString -Key $bytes
             Key           = $Key
         }#>
-        ConvertFrom-SecureString -SecureString $secureString -Key $bytes|ConvertTo-Base64
+        ConvertFrom-SecureString -SecureString $secureString -Key $bytes | ConvertTo-Base64
     }elseif("$Scope")
     {
         $StringBytes=$String|ConvertTo-Byte
@@ -134,3 +220,13 @@ Process{
         ConvertFrom-Csv
 }
 }
+
+Export-ModuleMember -Function ConvertFrom-Base64
+Export-ModuleMember -Function ConvertFrom-Decimal
+Export-ModuleMember -Function ConvertTo-Base64
+Export-ModuleMember -Function ConvertTo-Byte
+Export-ModuleMember -Function ConvertTo-Decimal
+Export-ModuleMember -Function ConvertTo-Object
+Export-ModuleMember -Function ConvertTo-String
+Export-ModuleMember -Function Decrypt-String
+Export-ModuleMember -Function Encrypt-String
