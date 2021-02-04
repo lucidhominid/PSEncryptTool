@@ -1,1 +1,9 @@
 # PSEncryptTool
+
+This module provides data conversion and cryptography functions to facilitate secure data storage.
+
+-Featured Functions-
+ConvertTo-EncryptedString  : Encrypts input string with DPAPI and converts it to Base64.
+ConvertFrom-EncryptedString: Converts input string from Base64 and decrypts it with DPAPI.
+Export-SecureCsv           : Converts input object to a csv string, passes it through ConvertTo-EncryptedString, and writes output to a specified file path.
+Import-SecureCsv           : Gets the content of a specied file, passes it through ConvertFrom-EncryptedString, and passes it through ConvertFrom-Csv
