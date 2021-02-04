@@ -1,4 +1,4 @@
-
+Add-Type -AssemblyName System.Security
 Function ConvertFrom-Decimal{
     [CmdletBinding()]
     Param
@@ -84,7 +84,7 @@ Function ConvertFrom-Decimal{
         ($OutObject|ForEach-Object{[Char]$_})-join ''
     }
     }
-Function Encrypt-String {
+Function ConvertTo-EncryptedString {
     [CmdletBinding(DefaultParameterSetName="Scope")]
     param
     (
@@ -138,7 +138,7 @@ Function Encrypt-String {
     }
     }
     }
-Function Decrypt-String {
+Function ConvertFrom-EncryptedString {
     [CmdletBinding(DefaultParameterSetName="Scope")]
     param
     (
@@ -204,7 +204,7 @@ Process{
 }
 End{
     $Entries | ConvertTo-Csv |
-        Encrypt-String |
+        ConvertTo-EncryptedString |
             Out-File -FilePath $Path
 }
 }
@@ -216,7 +216,7 @@ Function Import-SecureCsv {
         $Path
     )
 Process{
-    Get-Content -Path $Path | Decrypt-String |
+    Get-Content -Path $Path | ConvertFrom-EncryptedString |
         ConvertFrom-Csv
 }
 }
@@ -228,7 +228,7 @@ Export-ModuleMember -Function ConvertTo-Byte
 Export-ModuleMember -Function ConvertTo-Decimal
 Export-ModuleMember -Function ConvertTo-Object
 Export-ModuleMember -Function ConvertTo-String
-Export-ModuleMember -Function Decrypt-String
-Export-ModuleMember -Function Encrypt-String
+Export-ModuleMember -Function ConvertFrom-EncryptedString
+Export-ModuleMember -Function ConvertTo-EncryptedString
 Export-ModuleMember -Function Export-SecureCsv
 Export-ModuleMember -Function Import-SecureCsv
