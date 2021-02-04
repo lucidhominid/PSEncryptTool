@@ -203,9 +203,10 @@ Process{
     }
 }
 End{
-    $Entries | ConvertTo-Csv |
-        ConvertTo-EncryptedString |
-            Out-File -FilePath $Path
+    $Entries | ConvertTo-Csv | 
+        Out-String |
+            ConvertTo-EncryptedString |
+                Out-File -FilePath $Path
 }
 }
 Function Import-SecureCsv {
@@ -217,7 +218,8 @@ Function Import-SecureCsv {
     )
 Process{
     Get-Content -Path $Path | ConvertFrom-EncryptedString |
-        ConvertFrom-Csv
+        Out-String |
+            ConvertFrom-Csv
 }
 }
 
