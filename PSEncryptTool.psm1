@@ -230,3 +230,5 @@ Export-ModuleMember -Function ConvertTo-Object
 Export-ModuleMember -Function ConvertTo-String
 Export-ModuleMember -Function Decrypt-String
 Export-ModuleMember -Function Encrypt-String
+Export-ModuleMember -Function Export-SecureCsv
+Export-ModuleMember -Function Import-SecureCsv
