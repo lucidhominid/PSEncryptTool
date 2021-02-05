@@ -12,7 +12,19 @@ Function ConvertTo-Base64{
         $OutObject  = @()
     }
     Process{
-        $OutObject += $InputObject
+        Switch($InputObject){
+            {$_ -is [Byte]} {
+                $OutObject += $InputObject
+            }
+            {$_ -is [String]} {
+                $InputObject |
+                    ConvertTo-Byte |
+                    ForEach-Object{
+                        $OutObject += $_
+                    }
+            }
+        }
+        
     }
     End{
         [Convert]::ToBase64String(
@@ -123,13 +135,13 @@ Function ConvertTo-EncryptedString {
                 $Securestring = $String
             }else{
                 $Securestring = new-object System.Security.SecureString
-                $Chars = $String.toCharArray()
-                foreach($Char in $Chars){
-                    $secureString.AppendChar($char)
-                }
+                $String.toCharArray() |
+                    ForEach-Object{
+                        $secureString.AppendChar($_)
+                    }
             }
-            ConvertFrom-SecureString -SecureString $secureString -Key $bytes | 
-                ConvertTo-Base64
+            $SecureString |
+                ConvertFrom-SecureString -Key $bytes
         }elseif(
             "$Scope"
         ){
@@ -274,7 +286,7 @@ Function ConvertTo-MD5Hash{
         )][ValidateScript({
             try {
                 $_ | Get-Item -ErrorAction Stop
-            }catch {
+            }catch{
                 Throw $_.Exception
             }
         })][String]
@@ -282,38 +294,27 @@ Function ConvertTo-MD5Hash{
     )
     Process{
         [System.BitConverter]::ToString(
-            [System.Security.Cryptography.MD5CryptoServiceProvider]::new().ComputeHash(
-                $(
-                    if(
-                        $Path -or $InputObject -is [System.IO.FileInfo]
-                    ){
-                        $Path, 
-                        $InputObject |
-                            Where-Object {
-                                $_
-                            } |
-                            Get-Item |
-                            Get-Content -Encoding Byte -Raw
-                    }else{
-                        [System.Text.UTF8Encoding]::UTF8.GetBytes(
-                            $InputObject
-                        )
-                    }
-                )
-            )
+            [System.Security.Cryptography.MD5CryptoServiceProvider]::new().ComputeHash($(
+                if(
+                    $Path -or $InputObject -is [System.IO.FileInfo]
+                ){
+                    $Path, 
+                    $InputObject |
+                        Where-Object {
+                            $_
+                        } |
+                        Get-Item |
+                        Get-Content -Encoding Byte -Raw
+                }else{
+                    [System.Text.UTF8Encoding]::UTF8.GetBytes(
+                        $InputObject
+                    )
+                }
+            ))
         ).tolower() -replace '-'
     }
 }
-'ConvertFrom-Base64',
-'ConvertTo-Base64',
-'ConvertTo-Byte',
-'ConvertTo-Object',
-'ConvertTo-String',
-'ConvertFrom-EncryptedString',
-'ConvertTo-EncryptedString',
-'Export-SecureCsv',
-'Import-SecureCsv',
-'ConvertTo-MD5Hash' | 
+$MyInvocation.MyCommand.ScriptBlock.Ast.EndBlock.Statements | 
     ForEach-Object {
-        Export-ModuleMember -Function $_
+        Export-ModuleMember -Function $_.Name
     }
