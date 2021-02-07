@@ -9,14 +9,19 @@ Function ConvertTo-Base64{
         $InputObject
     )
     Begin{
-        $OutObject  = @()
+        #Create a Byte[]; an array to hold our bytes
+        $OutObject  = [Byte[]]::new(0)
     }
     Process{
         Switch($InputObject){
-            {$_ -is [Byte]} {
+            {#If input is Byte
+                $_ -is [Byte]
+            }{#Then add it to OutObject
                 $OutObject += $InputObject
             }
-            {$_ -is [String]} {
+            {#If input is String
+                $_ -is [String]
+            }{#Then convert it to a Byte[] and add each Byte to OutObject
                 $InputObject |
                     ConvertTo-Byte |
                     ForEach-Object{
@@ -24,7 +29,6 @@ Function ConvertTo-Base64{
                     }
             }
         }
-        
     }
     End{
         [Convert]::ToBase64String(
@@ -35,12 +39,16 @@ Function ConvertTo-Base64{
 Function ConvertFrom-Base64{
     [CmdletBinding()]
     Param(
+        #Parameter: InputString
         [Parameter(
             ValuefromPipeLine
         )][String[]]
-        $InputObject
+        $InputString
     )
-    [Convert]::FromBase64String($InputObject)
+    Process{
+        #Yeah, it just does this...
+        [Convert]::FromBase64String($InputString)
+    }
 }
 Function ConvertTo-Byte{
     [CmdletBinding()]
@@ -60,7 +68,7 @@ Function ConvertTo-Byte{
 Function ConvertTo-String{
 [CmdletBinding()]
 Param(
-    #Parameter: Byte
+    #Parameter: InputObject
     [Parameter(
         ValuefromPipeLine
     )][Byte]
@@ -85,18 +93,21 @@ Function ConvertTo-EncryptedString {
         DefaultParameterSetName="Scope"
     )]
     Param(
+        #Parameter: 
         [Parameter(
             Mandatory,
             Position=0,
             ValueFromPipeline
         )][String[]]
         $String,
+        #Parameter: Key
         [Parameter(
             ParameterSetName = 'Key',
             Mandatory,
-            Position=1
+            Position = 1
         )][String]
         $Key,
+        #Parameter: Scope
         [Parameter(
             ParameterSetName = 'Scope',
             Position = 1
@@ -279,6 +290,7 @@ Function ConvertTo-MD5Hash{
             Mandatory
         )][Object[]]
         $InputObject,
+
         #Parameter: Path
         [Parameter(
             ParameterSetName = 'Path',
@@ -296,16 +308,20 @@ Function ConvertTo-MD5Hash{
         [System.BitConverter]::ToString(
             [System.Security.Cryptography.MD5CryptoServiceProvider]::new().ComputeHash($(
                 if(
-                    $Path -or $InputObject -is [System.IO.FileInfo]
+                    #Note: It seems that $InputObject is seen as an [Array] here. Indexing into the first item in the array resolves this.
+                    $Path -or $InputObject[0] -is [System.IO.FileInfo]
                 ){
                     $Path, 
                     $InputObject |
                         Where-Object {
                             $_
                         } |
+                        Select-Object -First 1 |
                         Get-Item |
                         Get-Content -Encoding Byte -Raw
-                }else{
+                }elseif($InputObject -is [Byte[]]){
+                    $InputObject
+                }else {
                     [System.Text.UTF8Encoding]::UTF8.GetBytes(
                         $InputObject
                     )
