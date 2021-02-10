@@ -99,7 +99,7 @@ Function ConvertTo-EncryptedString {
             Position=0,
             ValueFromPipeline
         )][String[]]
-        $String,
+        $InputString,
         #Parameter: Key
         [Parameter(
             ParameterSetName = 'Key',
@@ -122,14 +122,14 @@ Function ConvertTo-EncryptedString {
             $Key
         ){
             $length = $Key.length
-            if(
+            <#if(
                 ($length -lt 16) -or ($length -gt 32)
             ){
                 Throw [Exception]::new(
                     'Key must be between 16 and 32 characters',
                     'Invalid key length.'
                 )
-            }
+            }#>
             $Encoding = New-Object System.Text.ASCIIEncoding
             $Bytes    = $Encoding.GetBytes(
                 $Key + "0" * (32 - $length)
@@ -137,16 +137,12 @@ Function ConvertTo-EncryptedString {
         }
     }
     Process{
-        if(
-            $Key
-        ){
-            if(
-                $String -is [System.Security.SecureString]
-            ){
-                $Securestring = $String
+        if($Key){
+            if($InputString -is [System.Security.SecureString]){
+                $Securestring = $InputString
             }else{
                 $Securestring = new-object System.Security.SecureString
-                $String.toCharArray() |
+                $InputString.toCharArray() |
                     ForEach-Object{
                         $secureString.AppendChar($_)
                     }
@@ -157,7 +153,7 @@ Function ConvertTo-EncryptedString {
             "$Scope"
         ){
             [System.Security.Cryptography.ProtectedData]::Protect(
-                ($String | ConvertTo-Byte),
+                ($InputString | ConvertTo-Byte),
                 $null,
                 $Scope
             ) | ConvertTo-Base64
@@ -175,7 +171,7 @@ Function ConvertFrom-EncryptedString{
             Position = 0,
             ValueFromPipeline
         )][String]
-        $String,
+        $InputString,
 
         #Parameter: Key
         [Parameter(
@@ -201,27 +197,39 @@ Function ConvertFrom-EncryptedString{
         ){
             $length = $Key.length
             $Pad    = 32 - $length
-            if(
+            <#if(
                 ($length -lt 16) -or ($length -gt 32)
             ){
                 Throw "Key must be between 16 and 32 characters"
-            }
-            $Key = [System.Text.ASCIIEncoding]::ASCII.GetBytes(
-                $Key + "0" * $Pad
-            )
-            $String | 
-                ConvertTo-Byte | 
-                ConvertTo-SecureString -key $key |
-                ForEach-Object {
-                    [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-                        [Runtime.InteropServices.Marshal]::SecureStringToBSTR(
-                            $_
+            }#>
+            Try{
+                $KeyBytes = $Key + "0" * $Pad|ConvertTo-Byte
+                $InputString | 
+                    ConvertTo-SecureString -key $KeyBytes -ErrorAction Stop |
+                    ForEach-Object {
+                        [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                            [Runtime.InteropServices.Marshal]::SecureStringToBSTR(
+                                $_
+                            )
                         )
-                    )
+                    }
+            }Catch{
+                $ErrorType = $_.Exception.GetType()
+                Switch($_.Exception.Message)
+                {
+                    'Padding is invalid and cannot be removed.' {
+                        $ThrowMessage = 'The provided key is invalid.'
+                    }
+                    "The parameter value `"$InputString`" is not a valid encrypted string." {
+                        $ThrowMessage = "`"$InputString`" is not a valid encrypted string."
+                    }
                 }
+                Write-Error -Exception $ErrorType::new($ThrowMessage) -TargetObject $Key -ErrorAction Stop
+            }
+            
         }else{
             [System.Security.Cryptography.ProtectedData]::Unprotect(
-                ($String | ConvertFrom-Base64),
+                ($InputString | ConvertFrom-Base64),
                 $null,
                 $Scope
             ) | ConvertTo-String
@@ -247,9 +255,10 @@ Function Export-SecureCsv {
         $Entries = @()
     }
     Process{
-        $InputObject | ForEach-Object{
-            $Entries += $_
-        }
+        $InputObject | 
+            ForEach-Object{
+                $Entries += $_
+            }
     }
     End{
         $Entries | 
